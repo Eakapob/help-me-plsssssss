@@ -152,23 +152,21 @@ function AdminDashboardPage() {
 
   return (
     <>
-      <h1 className=''>Admin Dashboard</h1>
-      <div className=''>
-        <div className='flex mt-0 w-200 p-20'>
-          <div>
-            <div className=''>
-                <button className='btu' onClick={() => window.history.back()}>ย้อนกลับ</button>
-                <button className='btu' onClick={() => {
-                  // Implement logout logic here
-                  console.log("Logout button clicked");
-                }}>ออกจากระบบ</button>
-            </div>
+      <div className='flex justify-center text-center'><h1 className='bg-green-400 text-white p-5 w-1/2'>Admin Dashboard</h1></div>
+      <div className='text-center border-2 flex justify-center h-full'>
+        <div className='p-20 w-1/2 bg-green-200 flex h-full'>
+          <div className='text-start mr-2px border-2 bg-white flex flex-col'>
+            <button className='bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded w-full' onClick={() => window.history.back()}>ย้อนกลับ</button>
+            <button className='bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded w-full' onClick={() => {
+              //Implement logout logic here
+              console.log("Logout button clicked");
+            }}>ออกจากระบบ</button>
           </div>
-          <div>
+          <div className='border-2 bg-white'>
             <div>
-              <h2>เพิ่มข้อมูลไปยัง Firebase:</h2>
-              <input type="text" placeholder='Add' onChange={(e) => setFaculty(e.target.value)} />
-              <button type='submit' onClick={AddData}>Add</button>
+              <h2 className='border-2'>เพิ่มข้อมูลไปยัง Firebase:</h2>
+              <input className='border-2' type="text" placeholder='Add' onChange={(e) => setFaculty(e.target.value)} />
+              <button className='bg-black text-white' type='submit' onClick={AddData}>Add</button>
             </div>
             <div className='Dropdown'>
               <select value={Faculty} onChange={(e) => {
@@ -182,19 +180,19 @@ function AdminDashboardPage() {
               </select>
             </div>
             <div>
-              <table>
-                <thead>
+              <table className='w-full'>
+                <thead className='bg-slate-500 border-b-2 border-gray-200 text-white'>
                   <tr>
-                    <th>หลักสูตร</th>
-                    <th>หน่วยกิต</th>
-                    <th>ระยะเวลาศึกษา</th>
-                    <th>เกรดต่ำสุด</th>
+                    <th className='p-3 text-sm tracking-normal'>หลักสูตร</th>
+                    <th className='p-3 text-sm tracking-normal'>หน่วยกิต</th>
+                    <th className='p-3 text-sm tracking-normal'>ระยะเวลาศึกษา</th>
+                    <th className='p-3 text-sm tracking-normal'>เกรดต่ำสุด</th>
                   </tr>
                 </thead>
                 <tbody>
                   {showLevelEdu?.map((level, index) => (
                     <tr key={index}>
-                      <tr>ระดับการศึกษา: {level.level}</tr>
+                      <tr className=''>ระดับการศึกษา: {level.level}</tr>
                       <tr>
                         {showDepartment?.map((department, deptIndex) => (
                           level.id === department.LevelEduId && (
@@ -203,7 +201,7 @@ function AdminDashboardPage() {
                               <tr>
                                 {showCourseYear?.map((courseyear, cyIndex) => (
                                   department.id === courseyear.YearsCourseId && (
-                                    <div key={cyIndex} className='years'>
+                                    <div key={cyIndex} className='text-blue-500'>
                                       <Link
                                         to={{
                                           pathname: "/info",
@@ -217,6 +215,7 @@ function AdminDashboardPage() {
                                 ))}
                                 <p style={{ display: 'inline' }}>Add CourseYear</p>
                                 <button
+                                  className='bg-blue-500 hover:bg-blue-700'
                                   style={{ display: 'inline' }}
                                   onClick={() =>
                                     setIsAddingCourseYear((prevData) => ({ ...prevData, [department.id]: true }))
@@ -237,7 +236,7 @@ function AdminDashboardPage() {
                                         }))
                                       }
                                     />
-                                    <button onClick={() => handleAddCourseYear(department.id)}>Save</button>
+                                    <button className='bg-blue-500 hover:bg-blue-700' onClick={() => handleAddCourseYear(department.id)}>Save</button>
                                   </div>
                                 )}
                               </tr>
@@ -246,6 +245,7 @@ function AdminDashboardPage() {
                         ))}
                         <p style={{ display: 'inline' }}>Add Department</p>
                         <button
+                          className='bg-blue-500 hover:bg-blue-700'
                           style={{ display: 'inline' }}
                           onClick={() =>
                             setIsAddingDepartment((prevData) => ({ ...prevData, [level.id]: true }))
@@ -266,7 +266,7 @@ function AdminDashboardPage() {
                                 }))
                               }
                             />
-                            <button onClick={() => handleAddDepartment(level.id)}>Save</button>
+                            <button className='bg-blue-500 hover:bg-blue-700' onClick={() => handleAddDepartment(level.id)}>Save</button>
                           </div>
                         )}
                       </tr>
@@ -275,7 +275,7 @@ function AdminDashboardPage() {
                   <tr>
                     <td colSpan="4">
                       <p style={{ display: 'inline' }}>Add Level</p>
-                      <button style={{ display: 'inline' }} onClick={() => setIsAddingLevel(true)}>+</button>
+                      <button className='bg-blue-500 hover:bg-blue-700' style={{ display: 'inline' }} onClick={() => setIsAddingLevel(true)}>+</button>
                       {isAddingLevel && (
                         <div>
                           <input
@@ -284,7 +284,7 @@ function AdminDashboardPage() {
                             value={LevelEdu}
                             onChange={(e) => setLevelEdu(e.target.value)}
                           />
-                          <button onClick={handleAddLevel}>Save</button>
+                          <button className='bg-blue-500 hover:bg-blue-700' onClick={handleAddLevel}>Save</button>
                         </div>
                       )}
                     </td>

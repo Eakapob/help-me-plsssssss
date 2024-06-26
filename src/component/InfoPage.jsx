@@ -105,19 +105,19 @@ function InfoPage() {
 
   const handleAddTableData = async (topicId, parentId = null) => {
     if (!newTableData[topicId]?.subjectCode || !newTableData[topicId]?.subjectName || !newTableData[topicId]?.credit) return;
-  
-    const path = parentId 
-      ? `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${parentId}/Subtopics/${topicId}/Table` 
+
+    const path = parentId
+      ? `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${parentId}/Subtopics/${topicId}/Table`
       : `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${topicId}/Table`;
-  
+
     const tableCollection = collection(db, path);
     const docRef = await addDoc(tableCollection, { ...newTableData[topicId] });
-  
+
     setTables(prev => ({
       ...prev,
       [topicId]: [...(prev[topicId] || []), { id: docRef.id, ...newTableData[topicId] }]
     }));
-  
+
     setNewTableData(prev => ({
       ...prev,
       [topicId]: { subjectCode: '', subjectName: '', credit: '' } // Reset all fields
@@ -144,241 +144,244 @@ function InfoPage() {
 
   return (
     <div>
-      <h1>Info Page</h1>
-      <h2>คณะ: {data.faculty?.Faculty}</h2>
-      <h3>ระดับการศึกษา: {data.levelEdu?.level}</h3>
-      <h4>ภาควิชา: {data.department?.DepartName}</h4>
-      <h5>หลักสูตรปี: {data.courseYear?.CourseYear}</h5>
+      <div className='flex justify-center text-center'><h1 className='bg-green-400 text-white p-5 w-1/2'>Info Page</h1></div>
+      <div className='text-center border-2 flex justify-center h-full bg-green-200'>
+        <div className='mt-0 p-20 w-1/2 flex flex-col h-full space-y-4'>
+          <h2 className=''>คณะ: {data.faculty?.Faculty}</h2>
+          <h3 className=''>ระดับการศึกษา: {data.levelEdu?.level}</h3>
+          <h4 className=''>ภาควิชา: {data.department?.DepartName}</h4>
+          <h5 className=''>หลักสูตรปี: {data.courseYear?.CourseYear}</h5>
+        </div>
+        <div>
+          <h3>หัวข้อ:</h3>
+          <ul>
+            {topics.map(topic => (
+              <li key={topic.id}>
+                {isEditing === topic.id ? (
+                  <>
+                    <input
+                      type='text'
+                      value={editTopic}
+                      onChange={(e) => setEditTopic(e.target.value)}
+                    />
+                    <button onClick={() => handleUpdateTopic(topic.id)}>Save</button>
+                    <button onClick={() => setIsEditing(null)}>Cancel</button>
+                  </>
+                ) : (
+                  <>
+                    {topic.name}
+                    <button onClick={() => {
+                      setIsEditing(topic.id);
+                      setEditTopic(topic.name);
+                    }}>Edit</button>
+                    <button onClick={() => handleDeleteTopic(topic.id)}>Delete</button>
+                  </>
+                )}
 
-      <div>
-        <h3>หัวข้อ:</h3>
-        <ul>
-          {topics.map(topic => (
-            <li key={topic.id}>
-              {isEditing === topic.id ? (
-                <>
-                  <input
-                    type='text'
-                    value={editTopic}
-                    onChange={(e) => setEditTopic(e.target.value)}
-                  />
-                  <button onClick={() => handleUpdateTopic(topic.id)}>Save</button>
-                  <button onClick={() => setIsEditing(null)}>Cancel</button>
-                </>
-              ) : (
-                <>
-                  {topic.name}
-                  <button onClick={() => {
-                    setIsEditing(topic.id);
-                    setEditTopic(topic.name);
-                  }}>Edit</button>
-                  <button onClick={() => handleDeleteTopic(topic.id)}>Delete</button>
-                </>
-              )}
+                <button onClick={() => setIsAddingSubtopic(isAddingSubtopic === topic.id ? null : topic.id)}>Add Subtopic</button>
+                <button onClick={() => handleShowTable(topic.id)}>Show Table</button>
 
-              <button onClick={() => setIsAddingSubtopic(isAddingSubtopic === topic.id ? null : topic.id)}>Add Subtopic</button>
-              <button onClick={() => handleShowTable(topic.id)}>Show Table</button>
-
-              {showTable[topic.id] && (
-                <div>
-                  <h4>ตาราง:</h4>
-                  <table>
-                    <thead>
-                      <tr>
-                        <th>Subject Code</th>
-                        <th>Subject Name</th>
-                        <th>Credit</th>
-                        <th>Actions</th>
-                      </tr>
-                    </thead>
-                    <tbody>
-                      {tables[topic.id]?.map((table) => (
-                        <tr key={table.id}>
-                          <td>{table.subjectCode}</td>
-                          <td>{table.subjectName}</td>
-                          <td>{table.credit}</td>
-                          <td>
-                            <button onClick={() => handleDeleteTableData(table.id, topic.id)}>Delete</button>
-                          </td>
+                {showTable[topic.id] && (
+                  <div>
+                    <h4>ตาราง:</h4>
+                    <table>
+                      <thead>
+                        <tr>
+                          <th>Subject Code</th>
+                          <th>Subject Name</th>
+                          <th>Credit</th>
+                          <th>Actions</th>
                         </tr>
-                      ))}
-                    </tbody>
-                  </table>
-                  {isAddingTable[topic.id] ? (
-                    <div>
-                      <input
-                        type='text'
-                        placeholder='Subject Code'
-                        value={newTableData[topic.id]?.subjectCode || ''}
-                        onChange={(e) =>
-                          setNewTableData((prev) => ({
-                            ...prev,
-                            [topic.id]: { ...prev[topic.id], subjectCode: e.target.value },
-                          }))
-                        }
-                      />
-                      <input
-                        type='text'
-                        placeholder='Subject Name'
-                        value={newTableData[topic.id]?.subjectName || ''}
-                        onChange={(e) =>
-                          setNewTableData((prev) => ({
-                            ...prev,
-                            [topic.id]: { ...prev[topic.id], subjectName: e.target.value },
-                          }))
-                        }
-                      />
-                      <input
-                        type='text'
-                        placeholder='Credit'
-                        value={newTableData[topic.id]?.credit || ''}
-                        onChange={(e) =>
-                          setNewTableData((prev) => ({
-                            ...prev,
-                            [topic.id]: { ...prev[topic.id], credit: e.target.value },
-                          }))
-                        }
-                      />
-                      <button onClick={() => handleAddTableData(topic.id)}>Save</button>
-                      <button
-                        onClick={() => setIsAddingTable((prev) => ({ ...prev, [topic.id]: false }))}
-                      >
-                        Cancel
+                      </thead>
+                      <tbody>
+                        {tables[topic.id]?.map((table) => (
+                          <tr key={table.id}>
+                            <td>{table.subjectCode}</td>
+                            <td>{table.subjectName}</td>
+                            <td>{table.credit}</td>
+                            <td>
+                              <button onClick={() => handleDeleteTableData(table.id, topic.id)}>Delete</button>
+                            </td>
+                          </tr>
+                        ))}
+                      </tbody>
+                    </table>
+                    {isAddingTable[topic.id] ? (
+                      <div>
+                        <input
+                          type='text'
+                          placeholder='Subject Code'
+                          value={newTableData[topic.id]?.subjectCode || ''}
+                          onChange={(e) =>
+                            setNewTableData((prev) => ({
+                              ...prev,
+                              [topic.id]: { ...prev[topic.id], subjectCode: e.target.value },
+                            }))
+                          }
+                        />
+                        <input
+                          type='text'
+                          placeholder='Subject Name'
+                          value={newTableData[topic.id]?.subjectName || ''}
+                          onChange={(e) =>
+                            setNewTableData((prev) => ({
+                              ...prev,
+                              [topic.id]: { ...prev[topic.id], subjectName: e.target.value },
+                            }))
+                          }
+                        />
+                        <input
+                          type='text'
+                          placeholder='Credit'
+                          value={newTableData[topic.id]?.credit || ''}
+                          onChange={(e) =>
+                            setNewTableData((prev) => ({
+                              ...prev,
+                              [topic.id]: { ...prev[topic.id], credit: e.target.value },
+                            }))
+                          }
+                        />
+                        <button onClick={() => handleAddTableData(topic.id)}>Save</button>
+                        <button
+                          onClick={() => setIsAddingTable((prev) => ({ ...prev, [topic.id]: false }))}
+                        >
+                          Cancel
+                        </button>
+                      </div>
+                    ) : (
+                      <button onClick={() => setIsAddingTable((prev) => ({ ...prev, [topic.id]: true }))}>
+                        Add Table Data
                       </button>
-                    </div>
-                  ) : (
-                    <button onClick={() => setIsAddingTable((prev) => ({ ...prev, [topic.id]: true }))}>
-                      Add Table Data
-                    </button>
-                  )}
-                </div>
-              )}
+                    )}
+                  </div>
+                )}
 
-              {isAddingSubtopic === topic.id && (
-                <div>
-                  <input
-                    type='text'
-                    placeholder='Subtopic Name'
-                    value={newTopic}
-                    onChange={(e) => setNewTopic(e.target.value)}
-                  />
-                  <button onClick={() => handleAddTopic(topic.id)}>Save</button>
-                  <button onClick={() => setIsAddingSubtopic(null)}>Cancel</button>
-                </div>
-              )}
+                {isAddingSubtopic === topic.id && (
+                  <div>
+                    <input
+                      type='text'
+                      placeholder='Subtopic Name'
+                      value={newTopic}
+                      onChange={(e) => setNewTopic(e.target.value)}
+                    />
+                    <button onClick={() => handleAddTopic(topic.id)}>Save</button>
+                    <button onClick={() => setIsAddingSubtopic(null)}>Cancel</button>
+                  </div>
+                )}
 
-              {topic.subtopics && topic.subtopics.length > 0 && (
-                <ul>
-                  {topic.subtopics.map(subtopic => (
-                    <li key={subtopic.id}>
-                      {isEditing === subtopic.id ? (
-                        <>
-                          <input
-                            type='text'
-                            value={editTopic}
-                            onChange={(e) => setEditTopic(e.target.value)}
-                          />
-                          <button onClick={() => handleUpdateTopic(subtopic.id, topic.id)}>Save</button>
-                          <button onClick={() => setIsEditing(null)}>Cancel</button>
-                        </>
-                      ) : (
-                        <>
-                          {subtopic.name}
-                          <button onClick={() => {
-                            setIsEditing(subtopic.id);
-                            setEditTopic(subtopic.name);
-                          }}>Edit</button>
-                          <button onClick={() => handleDeleteTopic(subtopic.id, topic.id)}>Delete</button>
-                        </>
-                      )}
-                      <button onClick={() => handleShowTable(subtopic.id)}>Show Table</button>
-                      {showTable[subtopic.id] && (
-                        <div>
-                          <h4>ตาราง:</h4>
-                          <table>
-                            <thead>
-                              <tr>
-                                <th>Subject Code</th>
-                                <th>Subject Name</th>
-                                <th>Credit</th>
-                                <th>Actions</th>
-                              </tr>
-                            </thead>
-                            <tbody>
-                              {tables[subtopic.id]?.map((table) => (
-                                <tr key={table.id}>
-                                  <td>{table.subjectCode}</td>
-                                  <td>{table.subjectName}</td>
-                                  <td>{table.credit}</td>
-                                  <td>
-                                    <button onClick={() => handleDeleteTableData(table.id, subtopic.id)}>Delete</button>
-                                  </td>
+                {topic.subtopics && topic.subtopics.length > 0 && (
+                  <ul>
+                    {topic.subtopics.map(subtopic => (
+                      <li key={subtopic.id}>
+                        {isEditing === subtopic.id ? (
+                          <>
+                            <input
+                              type='text'
+                              value={editTopic}
+                              onChange={(e) => setEditTopic(e.target.value)}
+                            />
+                            <button onClick={() => handleUpdateTopic(subtopic.id, topic.id)}>Save</button>
+                            <button onClick={() => setIsEditing(null)}>Cancel</button>
+                          </>
+                        ) : (
+                          <>
+                            {subtopic.name}
+                            <button onClick={() => {
+                              setIsEditing(subtopic.id);
+                              setEditTopic(subtopic.name);
+                            }}>Edit</button>
+                            <button onClick={() => handleDeleteTopic(subtopic.id, topic.id)}>Delete</button>
+                          </>
+                        )}
+                        <button onClick={() => handleShowTable(subtopic.id)}>Show Table</button>
+                        {showTable[subtopic.id] && (
+                          <div>
+                            <h4>ตาราง:</h4>
+                            <table>
+                              <thead>
+                                <tr>
+                                  <th>Subject Code</th>
+                                  <th>Subject Name</th>
+                                  <th>Credit</th>
+                                  <th>Actions</th>
                                 </tr>
-                              ))}
-                            </tbody>
-                          </table>
-                          {isAddingTable[subtopic.id] ? (
-                            <div>
-                              <input
-                                type='text'
-                                placeholder='Subject Code'
-                                value={newTableData[subtopic.id]?.subjectCode || ''}
-                                onChange={(e) =>
-                                  setNewTableData((prev) => ({
-                                    ...prev,
-                                    [subtopic.id]: { ...prev[subtopic.id], subjectCode: e.target.value },
-                                  }))
-                                }
-                              />
-                              <input
-                                type='text'
-                                placeholder='Subject Name'
-                                value={newTableData[subtopic.id]?.subjectName || ''}
-                                onChange={(e) =>
-                                  setNewTableData((prev) => ({
-                                    ...prev,
-                                    [subtopic.id]: { ...prev[subtopic.id], subjectName: e.target.value },
-                                  }))
-                                }
-                              />
-                              <input
-                                type='text'
-                                placeholder='Credit'
-                                value={newTableData[subtopic.id]?.credit || ''}
-                                onChange={(e) =>
-                                  setNewTableData((prev) => ({
-                                    ...prev,
-                                    [subtopic.id]: { ...prev[subtopic.id], credit: e.target.value },
-                                  }))
-                                }
-                              />
-                              <button onClick={() => handleAddTableData(subtopic.id)}>Save</button>
-                              <button
-                                onClick={() => setIsAddingTable((prev) => ({ ...prev, [subtopic.id]: false }))}
-                              >
-                                Cancel
+                              </thead>
+                              <tbody>
+                                {tables[subtopic.id]?.map((table) => (
+                                  <tr key={table.id}>
+                                    <td>{table.subjectCode}</td>
+                                    <td>{table.subjectName}</td>
+                                    <td>{table.credit}</td>
+                                    <td>
+                                      <button onClick={() => handleDeleteTableData(table.id, subtopic.id)}>Delete</button>
+                                    </td>
+                                  </tr>
+                                ))}
+                              </tbody>
+                            </table>
+                            {isAddingTable[subtopic.id] ? (
+                              <div>
+                                <input
+                                  type='text'
+                                  placeholder='Subject Code'
+                                  value={newTableData[subtopic.id]?.subjectCode || ''}
+                                  onChange={(e) =>
+                                    setNewTableData((prev) => ({
+                                      ...prev,
+                                      [subtopic.id]: { ...prev[subtopic.id], subjectCode: e.target.value },
+                                    }))
+                                  }
+                                />
+                                <input
+                                  type='text'
+                                  placeholder='Subject Name'
+                                  value={newTableData[subtopic.id]?.subjectName || ''}
+                                  onChange={(e) =>
+                                    setNewTableData((prev) => ({
+                                      ...prev,
+                                      [subtopic.id]: { ...prev[subtopic.id], subjectName: e.target.value },
+                                    }))
+                                  }
+                                />
+                                <input
+                                  type='text'
+                                  placeholder='Credit'
+                                  value={newTableData[subtopic.id]?.credit || ''}
+                                  onChange={(e) =>
+                                    setNewTableData((prev) => ({
+                                      ...prev,
+                                      [subtopic.id]: { ...prev[subtopic.id], credit: e.target.value },
+                                    }))
+                                  }
+                                />
+                                <button onClick={() => handleAddTableData(subtopic.id)}>Save</button>
+                                <button
+                                  onClick={() => setIsAddingTable((prev) => ({ ...prev, [subtopic.id]: false }))}
+                                >
+                                  Cancel
+                                </button>
+                              </div>
+                            ) : (
+                              <button onClick={() => setIsAddingTable((prev) => ({ ...prev, [subtopic.id]: true }))}>
+                                Add Table Data
                               </button>
-                            </div>
-                          ) : (
-                            <button onClick={() => setIsAddingTable((prev) => ({ ...prev, [subtopic.id]: true }))}>
-                              Add Table Data
-                            </button>
-                          )}
-                        </div>
-                      )}
-                    </li>
-                  ))}
-                </ul>
-              )}
-            </li>
-          ))}
-        </ul>
-        <input
-          type='text'
-          value={newTopic}
-          onChange={(e) => setNewTopic(e.target.value)}
-        />
-        <button onClick={() => handleAddTopic()}>Add Topic</button>
+                            )}
+                          </div>
+                        )}
+                      </li>
+                    ))}
+                  </ul>
+                )}
+              </li>
+            ))}
+          </ul>
+          <input
+            type='text'
+            value={newTopic}
+            onChange={(e) => setNewTopic(e.target.value)}
+          />
+          <button onClick={() => handleAddTopic()}>Add Topic</button>
+        </div>
       </div>
     </div>
   );
