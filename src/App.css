@@ -1,33 +1,5 @@
-/* .year {
-  border: 1px solid;
-  text-align: left;
-}
 
-table {
-  margin-left: 0%;
-}
 
-table,
-th,
-td {
-  border: 1px solid;
-}
-
-.sidebar {
-  margin-right: 2px;
-  text-align: start;
-}
-
-.nav-buttons {
-  display: flex;
-  flex-direction: column;
-
-}
-
-button {
-  padding: 10px;
-  cursor: pointer;
-} */
 
 @tailwind base;
 @tailwind components;
