@@ -7,6 +7,8 @@ import Dashboard from './component/DashboardPage.jsx'
 import AdminPage from './component/AdminPage.jsx'
 import AdminDashboardPage from './component/AdminDashboardPage.jsx'
 import InfoPage from './component/InfoPage.jsx'
+import Info from './component/Info.jsx'
+
 
 const router = createBrowserRouter([
   {
@@ -24,6 +26,10 @@ const router = createBrowserRouter([
   {
     path: "/info",
     element: <InfoPage />
+  },
+  {
+    path: "/infouser",
+    element: <Info />
   }
 
 ])

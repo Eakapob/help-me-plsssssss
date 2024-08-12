@@ -2,6 +2,7 @@ import React, { useState, useEffect } from 'react'
 import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from 'firebase/firestore';
 import { db } from '../firebase'
 import { Link } from 'react-router-dom';
+import classes from './AdminDashboardPage.module.css'
 
 function AdminDashboardPage() {
   const [Faculty, setFaculty] = useState("");
@@ -22,9 +23,6 @@ function AdminDashboardPage() {
   const [isAddingCourseYear, setIsAddingCourseYear] = useState({});
   const [isAddingDepartment, setIsAddingDepartment] = useState({});
   const [isAddingLevel, setIsAddingLevel] = useState(false);
-  
-  const [selectedLevelEduId, setSelectedLevelEduId] = useState("");
-
 
   const AddData = async (e) => {
     e.preventDefault();
@@ -36,7 +34,7 @@ function AdminDashboardPage() {
     }
   }
 
-  const handleAddCourseYear = async (departmentId,LevelEdu) => {
+  const handleAddCourseYear = async (departmentId, LevelEdu) => {
     try {
       const courseYearValue = CourseYear[departmentId];
       const creditsValue = Credits[departmentId];
@@ -57,7 +55,7 @@ function AdminDashboardPage() {
         collection(db, `/faculty/${Faculty}/LevelEdu/${LevelEdu}/Department/${departmentId}/CourseYear`),
         { CourseYear: courseYearValue, Credits: creditsValue, StudyDuration: studyDurationValue, MinGrade: minGradeValue }
       );
-      console.log('Course year added with ID: ', LevelEdu,' ', departmentId ,' ', docRef.id);
+      console.log('Course year added with ID: ', LevelEdu, ' ', departmentId, ' ', docRef.id);
 
       setShowCourseYear((prevData) => [
         ...prevData,
@@ -117,8 +115,6 @@ function AdminDashboardPage() {
       console.error('Error deleting course year: ', error);
     }
   };
-
-
 
   const handleAddDepartment = async (levelId) => {
     try {
@@ -217,13 +213,12 @@ function AdminDashboardPage() {
     fetchPost();
   }, []);
 
-
   return (
     <>
       <div className='bg-green-50 min-h-screen'>
         <div className='flex justify-center text-center'><h1 className='bg-green-400 text-white p-5 w-1/2'>Admin Dashboard</h1></div>
         <div className='flex justify-center'>
-          <div className='flex text-center w-1/2' >
+          <div className='flex text-center w-1/2 border border-black'>
             <div className='text-start border-black bg-white flex flex-col h-full items-center w-60'>
               <button className='bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded w-full' onClick={() => window.history.back()}>ย้อนกลับ</button>
               <button className='bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded w-full' onClick={() => {
@@ -233,12 +228,12 @@ function AdminDashboardPage() {
             </div>
             <div className='border-2 bg-white w-full'>
               <div>
-                <h2 className='border-2 mb-1'>เพิ่มข้อมูลไปยัง Firebase:</h2>
-                <input className='border-2 mb-1' type="text" placeholder='Add' onChange={(e) => setFaculty(e.target.value)} />
+                <h2 className='mb-1'>เพิ่มข้อมูลไปยัง Firebase:</h2>
+                <input className='border border-black mb-1' type="text" placeholder='Add' onChange={(e) => setFaculty(e.target.value)}/>
                 <button className='bg-black text-white' type='submit' onClick={AddData}>Add</button>
               </div>
-              <div className='border-2'>
-                <select value={Faculty} onChange={(e) => {
+              <div className=''>
+                <select className='border border-black' value={Faculty} onChange={(e) => {
                   setFaculty(e.target.value)
                   fetchPostEdu(e.target.value)
                 }}>
@@ -252,156 +247,164 @@ function AdminDashboardPage() {
                 <table className='w-full'>
                   <thead className='bg-slate-500 border-black border-gray-200 text-white'>
                     <tr>
-                      <th className='p-3 text-sm border-2'>หลักสูตร</th>
-                      <th className='p-3 text-sm border-2'>หน่วยกิต</th>
-                      <th className='p-3 text-sm border-2'>ระยะเวลาศึกษา</th>
-                      <th className='p-3 text-sm border-2'>เกรดต่ำสุด</th>
+                      <th className={classes.theader}>หลักสูตร</th>
+                      <th className={classes.theader}>หน่วยกิต</th>
+                      <th className={classes.theader}>ระยะเวลาศึกษา</th>
+                      <th className={classes.theader}>เกรดต่ำสุด</th>
                     </tr>
                   </thead>
                   <tbody>
                     {showLevelEdu?.map((level, index) => (
-                      <tr key={index}>
-                        <tr className='bg-slate-200 flex w-full '>ระดับการศึกษา: {level.level}</tr>
-                        <tr>
-                          {showDepartment?.map((department, deptIndex) => (
-                            level.id === department.LevelEduId && (
-                              <div key={deptIndex}>
-                                <tr className='bg-yellow-200'>
-                                  <td colSpan="4">ภาควิชา: {department.DepartName}</td>
-                                </tr>
-                                <tr>
-                                  {showCourseYear?.map((courseyear, cyIndex) => (
-                                    department.id === courseyear.YearsCourseId && (
-                                      <tr key={cyIndex} className='text-blue-500 bg-yellow-100'>
-                                        <td>
-                                          <Link
-                                            to={{
-                                              pathname: "/info",
-                                              search: `?faculty=${Faculty}&levelEdu=${level.id}&department=${department.id}&courseYear=${courseyear.id}`
-                                            }}
-                                          >
-                                            {courseyear.CourseYear}
-                                          </Link>
-                                        </td>
-                                        <td>{courseyear.Credits}</td>
-                                        <td>{courseyear.StudyDuration}</td>
-                                        <td>{courseyear.MinGrade}</td>
-                                        <td>
-                                          <button onClick={() => handleDeleteCourseYear(courseyear.id, department.id)}>Delete</button>
-                                        </td>
-                                      </tr>
-                                    )
-                                  ))}
-                                  <p style={{ display: 'inline' }}>Add CourseYear</p>
-                                  <button
-                                    className='bg-blue-500 hover:bg-blue-700'
-                                    style={{ display: 'inline' }}
-                                    onClick={() => {console.log(level.id)
-                                      setIsAddingCourseYear(prevData => ({
-                                        ...prevData,
-                                        [department.id]: true
-                                      }))
-                                    }}
-                                  >
-                                    +
-                                  </button>
-                                  {isAddingCourseYear[department.id] && (
-                                    <div>
-                                      <input
-                                        type='text'
-                                        placeholder='Add CourseYear'
-                                        value={CourseYear[department.id] || ''}
-                                        onChange={(e) =>
-                                          setCourseYear((prevData) => ({
-                                            ...prevData,
-                                            [department.id]: e.target.value,
-                                          }))
-                                        }
-                                      />
-                                      <input
-                                        type='text'
-                                        placeholder='Add Credits'
-                                        value={Credits[department.id] || ''}
-                                        onChange={(e) =>
-                                          setCredits((prevData) => ({
-                                            ...prevData,
-                                            [department.id]: e.target.value,
-                                          }))
-                                        }
-                                      />
-                                      <input
-                                        type='text'
-                                        placeholder='Add Study Duration'
-                                        value={StudyDuration[department.id] || ''}
-                                        onChange={(e) =>
-                                          setStudyDuration((prevData) => ({
-                                            ...prevData,
-                                            [department.id]: e.target.value,
-                                          }))
-                                        }
-                                      />
-                                      <input
-                                        type='text'
-                                        placeholder='Add Min Grade'
-                                        value={MinGrade[department.id] || ''}
-                                        onChange={(e) =>
-                                          setMinGrade((prevData) => ({
-                                            ...prevData,
-                                            [department.id]: e.target.value,
-                                          }))
-                                        }
-                                      />
-                                      <button className='bg-blue-500 hover:bg-blue-700' onClick={() => {console.log(LevelEdu); handleAddCourseYear(department.id, level.id)}}>Save</button>
-                                    </div>
-                                  )}
-                                </tr>
-                              </div>
-                            )
-                          ))}
-                          <p style={{ display: 'inline' }}>Add Department</p>
-                          <button
-                            className='bg-blue-500 hover:bg-blue-700'
-                            style={{ display: 'inline' }}
-                            onClick={() =>
-                              setIsAddingDepartment((prevData) => ({ ...prevData, [level.id]: true }))
-                            }
-                          >
-                            +
-                          </button>
-                          {isAddingDepartment[level.id] && (
-                            <div>
-                              <input
-                                type='text'
-                                placeholder='Add Department'
-                                value={Department[level.id] || ''}
-                                onChange={(e) =>
-                                  setDepartment((prevData) => ({
-                                    ...prevData,
-                                    [level.id]: e.target.value,
-                                  }))
-                                }
-                              />
-                              <button className='bg-blue-500 hover:bg-blue-700' onClick={() => handleAddDepartment(level.id)}>Save</button>
-                            </div>
-                          )}
+                      <React.Fragment key={level.id}>
+                        <tr key={index}>
+                          <td className='bg-slate-200 w-fit text-start' colSpan='4'>ระดับการศึกษา: {level.level}</td>
                         </tr>
-                      </tr>
+                        {showDepartment?.map((department, deptIndex) => (
+                          level.id === department.LevelEduId && (
+                            <React.Fragment key={department.id}>
+                              <tr className='bg-yellow-200' key={deptIndex}>
+                                <td className='text-start' colSpan='4'>ภาควิชา: {department.DepartName}</td>
+                              </tr>
+                              {showCourseYear?.map((courseyear, cyIndex) => (
+                                department.id === courseyear.YearsCourseId && (
+                                  <>
+                                    <tr key={cyIndex} className='w-full gap-3 border border-white' colSpan='5'>
+                                      <td className='bg-yellow-100'>
+                                        <Link className='text-blue-500 flex'
+                                          to={{
+                                            pathname: "/info",
+                                            search: `?faculty=${Faculty}&levelEdu=${level.id}&department=${department.id}&courseYear=${courseyear.id}`
+                                          }}
+                                          onClick={() => console.log(`faculty=${Faculty}&levelEdu=${level.id}&department=${department.id}&courseYear=${courseyear.id}`)}
+                                        >
+                                          {courseyear.CourseYear}
+                                        </Link>
+                                      </td>
+                                      <td className={classes.bdw}>{courseyear.Credits}</td>
+                                      <td className={classes.bdw}>{courseyear.StudyDuration}</td>
+                                      <td className={classes.bdw}>{courseyear.MinGrade}</td>
+                                      <td><button className="text-rose-600 bg-white border-white" onClick={() => handleDeleteCourseYear(courseyear.id, department.id)}>Delete</button></td>
+                                    </tr>
+                                  </>
+                                )
+                              ))}
+                              <tr>
+                                <td colSpan="4">
+                                  <span style={{ display: 'inline' }}>Add CourseYear</span>
+                                  <button
+                                className='bg-blue-500 hover:bg-blue-700'
+                                style={{ display: 'inline' }}
+                                onClick={() => {
+                                  console.log(level.id)
+                                  setIsAddingCourseYear(prevData => ({
+                                    ...prevData,
+                                    [department.id]: true
+                                  }))
+                                }}
+                              >
+                                +
+                              </button>
+                              {isAddingCourseYear[department.id] && (
+                                <div>
+                                  <input
+                                    type='text'
+                                    placeholder='Add CourseYear'
+                                    value={CourseYear[department.id] || ''}
+                                    onChange={(e) =>
+                                      setCourseYear((prevData) => ({
+                                        ...prevData,
+                                        [department.id]: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                  <input
+                                    type='text'
+                                    placeholder='Add Credits'
+                                    value={Credits[department.id] || ''}
+                                    onChange={(e) =>
+                                      setCredits((prevData) => ({
+                                        ...prevData,
+                                        [department.id]: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                  <input
+                                    type='text'
+                                    placeholder='Add Study Duration'
+                                    value={StudyDuration[department.id] || ''}
+                                    onChange={(e) =>
+                                      setStudyDuration((prevData) => ({
+                                        ...prevData,
+                                        [department.id]: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                  <input
+                                    type='text'
+                                    placeholder='Add Min Grade'
+                                    value={MinGrade[department.id] || ''}
+                                    onChange={(e) =>
+                                      setMinGrade((prevData) => ({
+                                        ...prevData,
+                                        [department.id]: e.target.value,
+                                      }))
+                                    }
+                                  />
+                                  <button className='bg-blue-500 hover:bg-blue-700' onClick={() => { console.log(LevelEdu); handleAddCourseYear(department.id, level.id) }}>Save</button>
+                                </div>
+                              )}
+                                </td>
+                              </tr>
+                            </React.Fragment>
+                          )
+                        ))}
+                        <tr>
+                          <td colSpan="4">
+                            <span style={{ display: 'inline' }}>Add Department</span>
+                            <button
+                              className='bg-blue-500 hover:bg-blue-700'
+                              style={{ display: 'inline' }}
+                              onClick={() =>
+                                setIsAddingDepartment((prevData) => ({ ...prevData, [level.id]: true }))
+                              }
+                            >
+                              +
+                            </button>
+                            {isAddingDepartment[level.id] && (
+                              <div>
+                                <input
+                                  type='text'
+                                  placeholder='Add Department'
+                                  value={Department[level.id] || ''}
+                                  onChange={(e) =>
+                                    setDepartment((prevData) => ({
+                                      ...prevData,
+                                      [level.id]: e.target.value,
+                                    }))
+                                  }
+                                />
+                                <button className='bg-blue-500 hover:bg-blue-700' onClick={() => handleAddDepartment(level.id)}>Save</button>
+                              </div>
+                            )}
+                          </td>
+                        </tr>
+                      </React.Fragment>
                     ))}
                     <tr>
                       <td colSpan="4">
-                        <p style={{ display: 'inline' }}>Add Level</p>
-                        <button className='bg-blue-500 hover:bg-blue-700' style={{ display: 'inline' }} onClick={() => setIsAddingLevel(true)}>+</button>
-                        {isAddingLevel && (
-                          <div>
-                            <input
-                              type='text'
-                              placeholder='Add Level'
-                              value={LevelEdu}
-                              onChange={(e) => setLevelEdu(e.target.value)}
-                            />
-                            <button className='bg-blue-500 hover:bg-blue-700' onClick={handleAddLevel}>Save</button>
-                          </div>
-                        )}
+                        <span style={{ display: 'inline' }}>Add Level</span>
+                          <button className='bg-blue-500 hover:bg-blue-700' style={{ display: 'inline' }} onClick={() => setIsAddingLevel(true)}>+</button>
+                          {isAddingLevel && (
+                            <div>
+                              <input
+                                type='text'
+                                placeholder='Add Level'
+                                value={LevelEdu}
+                                onChange={(e) => setLevelEdu(e.target.value)}
+                              />
+                              <button className='bg-blue-500 hover:bg-blue-700' onClick={handleAddLevel}>Save</button>
+                            </div>
+                          )}
                       </td>
                     </tr>
                   </tbody>
