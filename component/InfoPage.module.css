@@ -1,0 +1,3 @@
+.border-b {
+    @apply border border-black
+}
