@@ -83,14 +83,18 @@ function DashboardPage() {
   }, [departmentData]);
 
   return (
-    <div>
-      <div className='flex justify-center text-center'><h1 className='bg-green-400 text-white p-5 w-1/2'>Dashboard</h1></div>
-      <div className='text-center border-2 flex justify-center h-full'>
-        <div className='mt-0 p-20 w-1/2 bg-green-200 flex flex-row h-full'>
-        <div><p>เข้าสู้ระบบ<Link className='bg-blue-500 hover:bg-blue-700 text-white rounded' to="/admin">Login</Link></p></div>
-        <div>
-          <div>
-            <label htmlFor="facultySelect">Select Faculty: </label>
+    <div class="bg-gradient-to-b from-green-500 to-white h-screen">
+      <div className='flex justify-center text-center'><h1 className='bg-green-400 p-5 w-1/2'>
+        แพลทฟอร์มระบบสารสนเทศสำหรับรายละเอียดของหลักสูตร (มคอ.2) ตามเกณฑ์มาตรฐาน AUN-QA </h1>
+        </div>
+      <div className='text-center  flex justify-center h-full'>
+        <div className='mt-0 w-1/2 bg-green-200 flex flex-row h-full'>
+          {/* <div className="text-start border-black bg-white flex flex-col h-full items-center w-60 mt-0">
+            <p>เข้าสู่ระบบAdmin<Link className='bg-blue-500 hover:bg-blue-700 rounded text-white' to="/admin">Login</Link></p>
+          </div> */}
+        <div className='flex flex-col items-center w-full'>
+          <div className='mt-5'>
+            <label htmlFor="facultySelect">เลือก คณะ: </label>
             <select
               id="facultySelect"
               value={selectedFaculty}
@@ -104,7 +108,7 @@ function DashboardPage() {
               ))}
             </select>
           </div>
-          <table className='w-full mt-4'>
+          <table className='w-5/6 mt-4'>
             <thead className='bg-slate-500 border-black border-gray-200 text-white'>
               <tr>
                 <th className={classes.theader}>หลักสูตร</th>

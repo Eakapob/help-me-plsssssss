@@ -3,6 +3,7 @@ import { collection, addDoc, getDocs, updateDoc, deleteDoc, doc } from 'firebase
 import { db } from '../firebase'
 import { Link } from 'react-router-dom';
 import classes from './AdminDashboardPage.module.css'
+import { useAuth } from './AuthContext';
 
 function AdminDashboardPage() {
   const [Faculty, setFaculty] = useState("");
@@ -23,6 +24,8 @@ function AdminDashboardPage() {
   const [isAddingCourseYear, setIsAddingCourseYear] = useState({});
   const [isAddingDepartment, setIsAddingDepartment] = useState({});
   const [isAddingLevel, setIsAddingLevel] = useState(false);
+
+  const { logout } = useAuth();
 
   const AddData = async (e) => {
     e.preventDefault();
@@ -167,7 +170,7 @@ function AdminDashboardPage() {
       .then((querySnapshot) => {
         const newData = querySnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }))
         setShow(newData);
-        console.log("fetchPost", show, newData)
+        // console.log("fetchPost", show, newData)
       })
   }
 
@@ -176,7 +179,7 @@ function AdminDashboardPage() {
     const newData = querySnapshot.docs.map((doc) => ({ ...doc.data(), id: doc.id }));
     setShowLevelEdu(newData);
     setLevelEdu(newData[0]?.id || "");
-    console.log("fetchPostEdu:", showLevelEdu, newData);
+    // console.log("fetchPostEdu:", showLevelEdu, newData);
     await fetchPostDepart(facultyId, newData);
   }
 
@@ -215,21 +218,26 @@ function AdminDashboardPage() {
 
   return (
     <>
-      <div className='bg-green-50 min-h-screen'>
-        <div className='flex justify-center text-center'><h1 className='bg-green-400 text-white p-5 w-1/2'>Admin Dashboard</h1></div>
+      <div className='min-h-screen bg-gradient-to-b from-green-500 to-white h-screen"'>
+        <div className='flex justify-center text-center'><h1 className='bg-green-400 p-5 w-1/2'>Admin Dashboard</h1></div>
         <div className='flex justify-center'>
           <div className='flex text-center w-1/2 border border-black'>
             <div className='text-start border-black bg-white flex flex-col h-full items-center w-60'>
               <button className='bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded w-full' onClick={() => window.history.back()}>ย้อนกลับ</button>
-              <button className='bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded w-full' onClick={() => {
-                //Implement logout logic here
-                console.log("Logout button clicked");
-              }}>ออกจากระบบ</button>
+              <button
+                className='bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded w-full'
+                onClick={() => {
+                  logout(); // เรียกใช้ logout เมื่อคลิกปุ่ม
+                  console.log("Logout button clicked");
+                }}
+              >
+                ออกจากระบบ
+              </button>
             </div>
             <div className='border-2 bg-white w-full'>
               <div>
-                <h2 className='mb-1'>เพิ่มข้อมูลไปยัง Firebase:</h2>
-                <input className='border border-black mb-1' type="text" placeholder='Add' onChange={(e) => setFaculty(e.target.value)}/>
+                เพิ่มคณะ 
+                <input className='border border-black mb-1 ml-1' type="text" placeholder='Add' onChange={(e) => setFaculty(e.target.value)}/>
                 <button className='bg-black text-white' type='submit' onClick={AddData}>Add</button>
               </div>
               <div className=''>
@@ -275,7 +283,7 @@ function AdminDashboardPage() {
                                             pathname: "/info",
                                             search: `?faculty=${Faculty}&levelEdu=${level.id}&department=${department.id}&courseYear=${courseyear.id}`
                                           }}
-                                          onClick={() => console.log(`faculty=${Faculty}&levelEdu=${level.id}&department=${department.id}&courseYear=${courseyear.id}`)}
+                                          // onClick={() => console.log("pathlink check",`faculty=${Faculty}&levelEdu=${level.id}&department=${department.id}&courseYear=${courseyear.id}`)}
                                         >
                                           {courseyear.CourseYear}
                                         </Link>

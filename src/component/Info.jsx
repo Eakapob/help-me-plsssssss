@@ -1,7 +1,9 @@
 import React, { useEffect, useState } from 'react';
-import { useLocation, Link } from 'react-router-dom';
+import { useLocation, Link, useNavigate } from 'react-router-dom';
 import { collection, getDocs, getDoc, doc, addDoc, updateDoc, deleteDoc, arrayUnion } from 'firebase/firestore';
 import { db } from '../firebase';
+import { IconButton } from '@mui/material';
+
 
 function Info() {
   const location = useLocation();
@@ -48,10 +50,209 @@ function Info() {
   const [showPLOSection, setShowPLOSection] = useState(false);
 
   const queryParams = new URLSearchParams(location.search);
-  const facultyId = queryParams.get('faculty');
-  const levelEduId = queryParams.get('levelEdu');
-  const departmentId = queryParams.get('department');
-  const courseYearId = queryParams.get('courseYear');
+  const facultyId = queryParams.get("faculty");
+  const levelEduId = queryParams.get("levelEdu");
+  const departmentId = queryParams.get("department");
+  const courseYearId = queryParams.get("courseYear");
+
+  const [faculty, setFaculty] = useState('');
+  const [levelEdu, setLevelEdu] = useState('');
+  const [department, setDepartment] = useState('');
+  const [courseYear, setCourseYear] = useState('');
+
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [selectPLO, setSelectPLO] = useState(null);
+  const [relatedCLOs, setRelatedCLOs] = useState([]);
+
+  const [cloData, setCloData] = useState([]);
+  const [tableData, setTableData] = useState([]);
+
+  // Fetch CLO data
+  useEffect(() => {
+    const fetchAllCLOs = async () => {
+      if (!facultyId || !levelEduId || !departmentId || !courseYearId) {
+        console.warn("One of the required IDs is not defined");
+        return; // ออกจากฟังก์ชันถ้าไม่มีค่า ID
+      }
+
+      try {
+        // Define path for fetching Topics
+        const topicsPath = `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics`;
+        
+        const topicCollection = collection(db, topicsPath);
+        const topicSnapshot = await getDocs(topicCollection);
+        
+        let allCLOs = [];
+        let allTableData = [];
+
+        // Loop through all topics
+        for (const topicDoc of topicSnapshot.docs) {
+          const topicId = topicDoc.id;
+
+          // Fetch TableData for each topic
+          const tableDataCollection = collection(db, `${topicsPath}/${topicId}/TableData`);
+          const tableDataSnapshot = await getDocs(tableDataCollection);
+          const fetchedTableData = tableDataSnapshot.docs.map(doc => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          // Fetch CLOs for each topic
+          const cloCollection = collection(db, `${topicsPath}/${topicId}/CLOs`);
+          const cloSnapshot = await getDocs(cloCollection);
+          const fetchedCLOs = cloSnapshot.docs.map((doc) => ({
+            id: doc.id,
+            ...doc.data(),
+          }));
+
+          // Fetch Subtopics for each topic
+          const subtopicsCollection = collection(db, `${topicsPath}/${topicId}/Subtopics`);
+          const subtopicSnapshot = await getDocs(subtopicsCollection);
+          
+          // Loop through all subtopics
+          for (const subtopicDoc of subtopicSnapshot.docs) {
+            const subtopicId = subtopicDoc.id;
+
+            // Fetch TableData for each subtopic
+            const subtopicTableDataCollection = collection(db, `${topicsPath}/${topicId}/Subtopics/${subtopicId}/TableData`);
+            const subtopicTableDataSnapshot = await getDocs(subtopicTableDataCollection);
+            const fetchedSubtopicTableData = subtopicTableDataSnapshot.docs.map(doc => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+
+            // Fetch CLOs for each subtopic
+            const subtopicCloCollection = collection(db, `${topicsPath}/${topicId}/Subtopics/${subtopicId}/CLOs`);
+            const subtopicCloSnapshot = await getDocs(subtopicCloCollection);
+            const fetchedSubtopicCLOs = subtopicCloSnapshot.docs.map((doc) => ({
+              id: doc.id,
+              ...doc.data(),
+            }));
+
+            // Fetch Subinsubtopics for each subtopic
+            const subinsubtopicsCollection = collection(db, `${topicsPath}/${topicId}/Subtopics/${subtopicId}/Subinsubtopics`);
+            const subinsubtopicSnapshot = await getDocs(subinsubtopicsCollection);
+            
+            // Loop through all subinsubtopics
+            for (const subinsubtopicDoc of subinsubtopicSnapshot.docs) {
+              const subinsubtopicId = subinsubtopicDoc.id;
+
+              // Fetch TableData for each subinsubtopic
+              const subinsubtopicTableDataCollection = collection(db, `${topicsPath}/${topicId}/Subtopics/${subtopicId}/Subinsubtopics/${subinsubtopicId}/TableData`);
+              const subinsubtopicTableDataSnapshot = await getDocs(subinsubtopicTableDataCollection);
+              const fetchedSubinsubtopicTableData = subinsubtopicTableDataSnapshot.docs.map(doc => ({
+                id: doc.id,
+                ...doc.data(),
+              }));
+
+              // Fetch CLOs for each subinsubtopic
+              const subinsubtopicCloCollection = collection(db, `${topicsPath}/${topicId}/Subtopics/${subtopicId}/Subinsubtopics/${subinsubtopicId}/CLOs`);
+              const subinsubtopicCloSnapshot = await getDocs(subinsubtopicCloCollection);
+              const fetchedSubinsubtopicCLOs = subinsubtopicCloSnapshot.docs.map((doc) => ({
+                id: doc.id,
+                ...doc.data(),
+              }));
+
+              // รวมข้อมูล CLOs และ TableData ของ Subinsubtopic
+              allTableData.push(...fetchedSubinsubtopicTableData);
+              allCLOs.push(...fetchedSubinsubtopicCLOs);
+            }
+
+            // รวมข้อมูล CLOs และ TableData ของ Subtopic
+            allTableData.push(...fetchedSubtopicTableData);
+            allCLOs.push(...fetchedSubtopicCLOs);
+          }
+
+          // รวมข้อมูล CLOs และ TableData ของ Topic
+          allTableData.push(...fetchedTableData);
+          allCLOs.push(...fetchedCLOs);
+        }
+
+        // แสดงข้อมูล CLOs และ TableData ที่ดึงมา
+        // console.log("Fetched all Table Data:", allTableData);
+        // console.log("Fetched all CLOs:", allCLOs);
+
+        // ตั้งค่า state สำหรับข้อมูลที่ถูกดึงทั้งหมด
+        setTableData(allTableData);
+        setCloData(allCLOs);
+      } catch (error) {
+        console.error("Error fetching all data: ", error);
+      }
+    };
+
+    fetchAllCLOs();
+  }, [facultyId, levelEduId, departmentId, courseYearId]); // เพิ่ม dependencies
+  
+  const handlePLOClick = (plo) => {
+    console.log("Selected PLO ID:", plo.id); // ตรวจสอบค่า PLO ที่เลือก
+  
+    // กรอง CLOs ตาม TableData ที่เกี่ยวข้องกับ PLO ที่เลือก
+    const relatedCLOs = cloData.filter((clo) => {
+      console.log("CLO PLO ID:", clo.ploId); // แสดงค่า ploId ของ CLO เพื่อการตรวจสอบ
+      return clo.ploId === plo.id; // กรอง CLO ที่มี ploId ตรงกับ PLO ที่เลือก
+    });
+  
+    console.log("Filtered CLOs:", relatedCLOs); // แสดง CLOs ที่เกี่ยวข้อง
+  
+    setRelatedCLOs(relatedCLOs); // เก็บ CLOs ที่เกี่ยวข้องใน state
+    setSelectPLO(plo); // เก็บ PLO ที่ถูกเลือก
+    setIsModalOpen(true); // เปิด modal
+  };
+
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setSelectPLO(null);
+  };
+
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    const fetchData = async () => {
+      try {
+        // สร้าง references สำหรับ collection และ documents
+        const facultyDocRef = doc(db, `faculty/${facultyId}`);
+        const levelEduDocRef = doc(db, `faculty/${facultyId}/LevelEdu/${levelEduId}`);
+        const departmentDocRef = doc(db, `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}`);
+        const courseYearDocRef = doc(db, `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}`);
+        
+        // ดึงข้อมูลจาก Firestore
+        const facultyData = await getDoc(facultyDocRef);
+        const levelEduData = await getDoc(levelEduDocRef);
+        const departmentData = await getDoc(departmentDocRef);
+        const courseYearData = await getDoc(courseYearDocRef);
+        
+        // อัปเดต state ด้วยข้อมูลที่ได้
+        if (facultyData.exists()) {
+          setFaculty(facultyData.data().Faculty);
+        } else {
+          // console.log("No such document in faculty!");
+        }
+    
+        if (levelEduData.exists()) {
+          setLevelEdu(levelEduData.data().level);
+        } else {
+          // console.log("No such document in levelEdu!");
+        }
+    
+        if (departmentData.exists()) {
+          setDepartment(departmentData.data().DepartName);
+        } else {
+          // console.log("No such document in department!");
+        }
+    
+        if (courseYearData.exists()) {
+          setCourseYear(courseYearData.data().CourseYear);
+        } else {
+          // console.log("No such document in courseYear!");
+        }
+        
+      } catch (error) {
+        // console.error('Error fetching data:', error);
+      }
+    };
+
+    fetchData();
+  }, [facultyId, levelEduId, departmentId, courseYearId]);
 
   useEffect(() => {
     if (!facultyId || !levelEduId || !departmentId || !courseYearId) {
@@ -205,7 +406,39 @@ function Info() {
     }
   };
 
-  const handleSubjectClick = async (parentId, tableId, subjectCode, parentType = 'topic', grandParentId = null, greatGrandParentId = null) => {
+  const getPloById = async (ploId) => {
+    try {
+      if (!ploId) {
+        console.log("Invalid ploId:", ploId); // เพิ่มการ log
+        return null;
+      }
+  
+      const ploDocRef = doc(db, `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/PLO`, ploId);
+      const ploDoc = await getDoc(ploDocRef);
+  
+      if (ploDoc.exists()) {
+        //console.log("PLO found:", ploDoc.data()); // เพิ่มการ log เพื่อตรวจสอบข้อมูลที่ได้มา
+        return ploDoc.data(); // ดึงข้อมูล PLO
+      } else {
+        console.log("PLO not found for ploId:", ploId);
+        return null;
+      }
+    } catch (error) {
+      console.error("Error fetching PLO:", error);
+      return null;
+    }
+  };
+
+  // ส่วนกดlink
+  const handleSubjectClick = async (
+    parentId,
+    tableId,
+    subjectCode,
+    parentType = "topic",
+    grandParentId = null,
+    greatGrandParentId = null
+  ) => {
+    console.log("tableId:", tableId)
     try {
       setSelectedSubjectCode(subjectCode);
       setSelectedSubjectId(parentId);
@@ -214,14 +447,24 @@ function Info() {
       setSelectedGrandParentId(grandParentId);
       setSelectedGreatGrandParentId(greatGrandParentId);
       setTableDataId(tableId); // เก็บ TableDataID ที่เกี่ยวข้อง
-      
+  
       let docRef;
-      if (parentType === 'topic') {
-        docRef = doc(db, `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${parentId}/TableData/${tableId}`);
-      } else if (parentType === 'subtopic') {
-        docRef = doc(db, `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${grandParentId}/Subtopics/${parentId}/TableData/${tableId}`);
-      } else if (parentType === 'subinsubtopic') {
-        docRef = doc(db, `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${greatGrandParentId}/Subtopics/${grandParentId}/Subinsubtopics/${parentId}/TableData/${tableId}`);
+      // สร้าง docRef ตาม parentType
+      if (parentType === "topic") {
+        docRef = doc(
+          db,
+          `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${parentId}/TableData/${tableId}`
+        );
+      } else if (parentType === "subtopic") {
+        docRef = doc(
+          db,
+          `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${grandParentId}/Subtopics/${parentId}/TableData/${tableId}`
+        );
+      } else if (parentType === "subinsubtopic") {
+        docRef = doc(
+          db,
+          `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${greatGrandParentId}/Subtopics/${grandParentId}/Subinsubtopics/${parentId}/TableData/${tableId}`
+        );
       }
   
       // ดึงข้อมูล TableData
@@ -229,65 +472,96 @@ function Info() {
       if (docSnap.exists()) {
         const data = docSnap.data();
         const ploIds = data.PLOs || [];
-        // const cloCollectionPath = `${docRef.path}/CLOs`;
-        
+  
         // Map PLO IDs to their detailed information using allPLOs
-        const ploDetails = ploIds.map(ploId => {
-          const plo = allPLOs.find(p => p.id === ploId);
-          return plo ? plo : { id: ploId, number: "Unknown", description: "No description available" };
+        const ploDetails = ploIds.map((ploId) => {
+          const plo = allPLOs.find((p) => p.id === ploId);
+          return plo
+            ? plo
+            : {
+                id: ploId,
+                number: "Unknown",
+                description: "No description available",
+              };
         });
-        
+  
         setSelectedSubjectPLOs(ploDetails);
         // Set course details
-        setCourseDescriptionTH(data.courseDescriptionTH || '');
-        setCourseDescriptionENG(data.courseDescriptionENG || '');
-        setRequiredSubjects(data.requiredSubjects || '');
-        setConditions(data.conditions || '');
-        setGradeType(data.gradeType || '');
+        setCourseDescriptionTH(data.courseDescriptionTH || "");
+        setCourseDescriptionENG(data.courseDescriptionENG || "");
+        setRequiredSubjects(data.requiredSubjects || "");
+        setConditions(data.conditions || "");
+        setGradeType(data.gradeType || "");
   
-        // Define CLO paths based on parent type
+        // Fetch CLO data (ถ้าต้องการ)
         let cloPaths = [];
-        if (parentType === 'topic') {
+        if (parentType === "topic") {
           cloPaths = [
-            `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${parentId}/CLOs`
+            `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${parentId}/CLOs`,
           ];
-        } else if (parentType === 'subtopic') {
+        } else if (parentType === "subtopic") {
           cloPaths = [
-            `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${grandParentId}/Subtopics/${parentId}/CLOs`
+            `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${grandParentId}/Subtopics/${parentId}/CLOs`,
           ];
-        } else if (parentType === 'subinsubtopic') {
+        } else if (parentType === "subinsubtopic") {
           cloPaths = [
-            `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${greatGrandParentId}/Subtopics/${grandParentId}/Subinsubtopics/${parentId}/CLOs`
+            `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${greatGrandParentId}/Subtopics/${grandParentId}/Subinsubtopics/${parentId}/CLOs`,
           ];
         }
-
-        // Fetch CLO data from the appropriate path
+  
+        // Fetch CLO data from the appropriate path (ถ้าต้องการ)
         const cloData = [];
         for (const path of cloPaths) {
           const cloCollection = collection(db, path);
           const cloSnapshot = await getDocs(cloCollection);
-          
+  
           if (!cloSnapshot.empty) {
-            cloSnapshot.forEach(doc => {
+            cloSnapshot.forEach((doc) => {
               cloData.push({ id: doc.id, ...doc.data() });
             });
           }
         }
-        
+  
         setSelectedSubjectCLOs(cloData);
+        
+        // สร้าง updatedCLOs ที่รวม PLOs
+        const updatedCLOs = await Promise.all(
+          cloData.map(async (clo) => {
+            const plo = await getPloById(clo.ploId);
+            return {
+              ...clo,
+              ploNumber: plo ? plo.number : "Unknown",
+              ploDescription: plo ? plo.description : "Unknown",
+            };
+          })
+        );
+        
+        navigate(`/course-detailsuser/${subjectCode}`, {
+          state: {
+            facultyId,
+            levelEduId,
+            departmentId,
+            courseYearId,
+            parentType,
+            parentId,
+            grandParentId,
+            greatGrandParentId,
+            tableId,
+            selectedSubjectCode: subjectCode,
+            closWithPLOs: updatedCLOs,
+          },
+        });
+  
       } else {
-        console.log('No such document!');
+        console.log("No such document!");
         setSelectedSubjectPLOs([]);
         setSelectedSubjectCLOs([]);
       }
     } catch (error) {
-      console.error('Error fetching PLOs and CLOs for subject: ', error);
+      console.error("Error fetching PLOs and CLOs for subject: ", error);
       setSelectedSubjectPLOs([]);
       setSelectedSubjectCLOs([]);
     }
-    
-    // เปิดฟอร์มเพิ่ม CLO
-    setIsAddingCLO(true);
   };
   
   const togglePLOSectionVisibility = () => {
@@ -299,26 +573,28 @@ function Info() {
   }
 
   return (
-    <div>
-      <div className='flex justify-center text-center'><h1 className='bg-green-400 text-white p-5 w-1/2'>Info Page</h1></div>
+    <div class="bg-gradient-to-b from-green-500 to-white h-screen">
+      <div className='flex justify-center text-center'><h1 className='bg-green-400 text-white p-5 w-3/5'>Info Page</h1></div>
       <div className='flex justify-center'>
-        <div className='h-full border border-black flex w-1/2'>
+        <div className='h-full border border-black flex w-3/5 bg-white'>
           <div className='text-start border-black bg-white flex flex-col h-full items-center w-60'>
             <button className='bg-blue-500 hover:bg-blue-700 text-white py-2 px-4 rounded w-full' onClick={() => window.history.back()}>ย้อนกลับ</button>
-            
           </div>
           <div className='flex flex-col w-full'>
-            <div className='mt-0 h-full'>
-              <h2 className=''>คณะ: {data.faculty?.Faculty}</h2>
-              <h3 className=''>ระดับการศึกษา: {data.levelEdu?.level}</h3>
-              <h4 className=''>ภาควิชา: {data.department?.DepartName}</h4>
-              <h5 className=''>หลักสูตรปี: {data.courseYear?.CourseYear}</h5>
+            <div className="border border-gray-400 rounded-lg">
+              <div className="mt-0 ml-5 h-full">
+                <h2 className="text-lg font-semibold text-gray-700">คณะ: {faculty}</h2>
+                <h3 className="text-lg font-semibold text-gray-700">ระดับการศึกษา: {levelEdu}</h3>
+                <h4 className="text-lg font-semibold text-gray-700">ภาควิชา: {department}</h4>
+                <h5 className="text-lg font-semibold text-gray-700">หลักสูตรปี: {courseYear}</h5>
+              </div>
             </div>
-            <div className=''>
-              <h3>หัวข้อ:</h3>
+            <div className='mt-5'>
               <div className='border border-black'>
-                {topics.map(topic => (
-                  <div className='ml-10' key={topic.id}>
+                {topics
+                .sort((a, b) => a.name.localeCompare(b.name)) // Sort topics by name in ascending order
+                .map(topic => (
+                  <div className='ml-8' key={topic.id}>
                     {isEditing === topic.id ? (
                       <>
                       </>
@@ -332,8 +608,12 @@ function Info() {
                       </div>
                     )}
 
-                    <button className='border border-black' onClick={() => toggleTableVisibility(topic.id)}>
-                      {showTable[topic.id] ? 'Hide Table' : 'Show Table'}
+                    <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-1 border border-blue-700 rounded ml-1" onClick={() => toggleTableVisibility(topic.id)}>
+                    {showTable[topic.id] ? (
+                        <span>&lt;</span> // ไอคอนเปิด
+                      ) : (
+                        <span>&gt;</span> // ไอคอนปิด
+                      )}
                     </button>
 
                     {showTable[topic.id] && (
@@ -350,7 +630,7 @@ function Info() {
                           topic.tables.map((table, idx) => (
                             <tr key={idx}>
                               <td className='border border-black bg-yellow-100 cursor-pointer' onClick={() => handleSubjectClick(topic.id, table.id, table.subjectCode, 'topic')}>{table.subjectCode}</td>
-                              <td className='border border-black bg-yellow-100'>{table.subjectName}</td>
+                              <td className='border border-black bg-yellow-100'>{table.subjectNameENG}</td>
                               <td className='border border-black bg-yellow-100'>{table.credit}</td>
                             </tr>
                           ))
@@ -364,16 +644,22 @@ function Info() {
                       </div>
                     )}
 
-                    {topic.subtopics && topic.subtopics.map(subtopic => (
-                      <div className='ml-16' key={subtopic.id}>
+                    {topic.subtopics && topic.subtopics
+                      .sort((a, b) => a.name.localeCompare(b.name)) // Sort subtopics by name in ascending order
+                      .map(subtopic => (
+                      <div className='ml-8' key={subtopic.id}>
                         {isEditing === subtopic.id ? (
                           <div>
                           </div>
                         ) : (
                           <div>
-                            <h3>{subtopic.name}</h3>
-                            <button className='border border-black' onClick={() => toggleTableVisibility(`${topic.id}-${subtopic.id}`)}>
-                              {showTable[`${topic.id}-${subtopic.id}`] ? 'Hide Table' : 'Show Table'}
+                            {subtopic.name}
+                            <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-1 border border-blue-700 rounded ml-1" onClick={() => toggleTableVisibility(`${topic.id}-${subtopic.id}`)}>
+                            {showTable[`${topic.id}-${subtopic.id}`] ? (
+                              <span>&lt;</span> // ไอคอนเปิด
+                            ) : (
+                              <span>&gt;</span> // ไอคอนปิด
+                            )}
                             </button>
                           </div>
                         )}
@@ -395,7 +681,7 @@ function Info() {
                               {subtopic.tables.map((table, idx) => (
                                 <tr key={idx}>
                                   <td className='border border-black bg-yellow-100 cursor-pointer' onClick={() => handleSubjectClick(subtopic.id, table.id, table.subjectCode, 'subtopic', topic.id)}>{table.subjectCode}</td>
-                                  <td className='border border-black bg-yellow-100'>{table.subjectName}</td>
+                                  <td className='border border-black bg-yellow-100'>{table.subjectNameENG}</td>
                                   <td className='border border-black bg-yellow-100'>{table.credit}</td>
                                 </tr>
                               ))}
@@ -407,19 +693,23 @@ function Info() {
                           </div>
                         )}
                       
-                        {subtopic.subinsubtopics && subtopic.subinsubtopics.map(subinsubtopic => {
-                          // console.log('subtopic:', subtopic);
-                          return(
-                          <div className='ml-16' key={subinsubtopic.id}>
+                        {subtopic.subinsubtopics && subtopic.subinsubtopics
+                          .sort((a, b) => a.name.localeCompare(b.name)) // Sort subinsubtopics by name in ascending order
+                          .map(subinsubtopic => (
+                          <div className='ml-8' key={subinsubtopic.id}>
 
                             {isEditing === subinsubtopic.id ? (
                               <div>
                               </div>
                             ) : (
                               <div>
-                                <h4>{subinsubtopic.name}</h4>
-                                <button onClick={() => {console.log('run'),toggleTableVisibility(`${topic.id}-${subtopic.id}-${subinsubtopic.id}`)}}>
-                                  {showTable[`${topic.id}-${subtopic.id}-${subinsubtopic.id}`] ? 'Hide Table' : 'Show Table'}
+                                {subinsubtopic.name}
+                                <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-1 px-1 border border-blue-700 rounded ml-1" onClick={() => {console.log('run'),toggleTableVisibility(`${topic.id}-${subtopic.id}-${subinsubtopic.id}`)}}>
+                                {showTable[`${topic.id}-${subtopic.id}-${subinsubtopic.id}`] ? (
+                                  <span>&lt;</span> // ไอคอนเปิด
+                                ) : (
+                                  <span>&gt;</span> // ไอคอนปิด
+                                )}
                                 </button>
 
                                 {showTable[`${topic.id}-${subtopic.id}-${subinsubtopic.id}`] && (
@@ -435,7 +725,7 @@ function Info() {
                                       {subinsubtopic.tables.map((table, idx) => (
                                           <tr key={idx}>
                                             <td className='border border-black bg-yellow-100 cursor-pointer' onClick={() => handleSubjectClick(subinsubtopic.id, table.id, table.subjectCode, 'subinsubtopic', subtopic.id, topic.id)}>{table.subjectCode}</td>
-                                            <td className='border border-black bg-yellow-100'>{table.subjectName}</td>
+                                            <td className='border border-black bg-yellow-100'>{table.subjectNameENG}</td>
                                             <td className='border border-black bg-yellow-100'>{table.credit}</td>
                                           </tr>
                                         ))}
@@ -449,26 +739,15 @@ function Info() {
                               </div>
                             )}
                           </div>
-                          );
-
-                        })}
+                        ))}
                       </div>
                     ))}
                   </div>
                 ))}
                   <div>
-                    {/* <h3>PLOs select</h3> */}
-                    {selectedSubjectCode && (
-                      <div className='bg-lime-200'>
-                        {/* <h3>PLOs for {selectedSubjectCode}</h3>
-                        <ul>
-                          {selectedSubjectPLOs.map((plo, index) => (
-                            <li key={index}>
-                              <strong>Number:</strong> {plo.number}, <strong>Description:</strong> {plo.description}
-                            </li>
-                          ))}
-                        </ul> */}
-                        <h3>Course Details for {selectedSubjectCode}</h3>
+                    {/* {selectedSubjectCode && (
+                      <div className='bg-lime-300'>
+                        <h3 className='bg-lime-100'>Course Details for {selectedSubjectCode}</h3>
                           <ul>
                             <li><strong>Course Description (TH):</strong> {courseDescriptionTH}</li>
                             <li><strong>Course Description (ENG):</strong> {courseDescriptionENG}</li>
@@ -487,19 +766,88 @@ function Info() {
                           ))}
                         </ul>
                       </div>
-                    )}
-                    {isAddingCLO && (
-                      <div className='bg-green-400'>
-                      </div>
-                    )}
-                    
+                    )} */}
                     </div>
                   </div>
                   <div>
                   <h2 className='text-center'>
                     <span className="bg-green-500 text-white">PLOs</span>
                   </h2>
-                      <button className='border border-black' onClick={togglePLOSectionVisibility}>
+                  <table>
+                        <thead>
+                          <tr className='bg-slate-500 border-black border-gray-200 text-white'>
+                            <th className='border border-black'>ลำดับ</th>
+                            <th className='border border-black'>ผลลัพธ์การเรียนรู้ที่คาดหวังของหลักสูตร (PLOs)</th>
+                            <th className='border border-black'>Cognitive Domain </th>
+                            <th className='border border-black'>Psychomotor Domain (Skills)</th>
+                            <th className='border border-black'>Affective Domain (Attitude)</th>
+                          </tr>
+                        </thead>
+                        <tbody>
+                        {data.PLO &&
+                          data.PLO.sort((a, b) => a.number - b.number).map(
+                            (plo, index) => (
+                              <tr key={index}>
+                                <td
+                                  className="text-center border border-black cursor-pointer"
+                                  onClick={() => handlePLOClick(plo)}
+                                >
+                                  PLO{plo.number}
+                                </td>
+                                <td
+                                  className="border border-black cursor-pointer"
+                                  onClick={() => handlePLOClick(plo)}
+                                >
+                                  {plo.description}
+                                </td>
+                                <td className="text-center border border-black">
+                                  {plo.cognitiveDomain}
+                                </td>
+                                <td className="text-center border border-black">
+                                  {plo.psychomotorDomain ? "✔" : ""}
+                                </td>
+                                <td className="text-center border border-black">
+                                  {plo.affectiveDomain ? "✔" : ""}
+                                </td>
+                              </tr>
+                            )
+                          )}
+                        </tbody>
+                      </table>
+                      {isModalOpen && selectPLO && (
+                      <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
+                        <div className="bg-white p-6 rounded-lg shadow-lg">
+                          <h3 className="text-xl font-bold">CLOs for PLO {selectPLO.number}</h3>
+                          {tableData.filter(tableDataItem => 
+                            relatedCLOs.some(clo => clo.tableDataId === tableDataItem.id) // กรองเฉพาะ TableData ที่มี CLO
+                          ).map((tableDataItem) => (
+                            <div key={tableDataItem.id} className="mb-4">
+                              <h4 className="font-semibold">{tableDataItem.subjectNameTH}</h4> 
+                              <ul>
+                                {relatedCLOs.filter((clo) => clo.tableDataId === tableDataItem.id) // ใช้ relatedCLOs ในการกรอง CLOs ตาม TableData ID
+                                  .map((clo) => (
+                                    <li key={clo.id} className="border-b py-2">
+                                      <strong>{clo.name}</strong>: {clo.description}
+                                    </li>
+                                  ))}
+                              </ul>
+                            </div>
+                          ))}
+                          {tableData.filter(tableDataItem => 
+                            relatedCLOs.some(clo => clo.tableDataId === tableDataItem.id) // ตรวจสอบการกรองให้แน่ใจว่าไม่มีวิชาที่ไม่มี CLO
+                          ).length === 0 && (
+                            <p>ไม่มีวิชาที่มี CLO ที่เกี่ยวข้อง</p>
+                          )}
+                          <button
+                            onClick={closeModal}
+                            className="mt-4 bg-red-500 text-white px-4 py-2 rounded"
+                          >
+                            ปิด
+                          </button>
+                        </div>
+                      </div>
+                    )}
+                      <button class="bg-blue-500 hover:bg-blue-700 text-white font-bold py-2 px-4 border border-blue-700 rounded" onClick={togglePLOSectionVisibility}>
                         {showPLOSection ? 'Hide PLOs' : 'Show PLOs'}
                       </button>
 
@@ -507,7 +855,7 @@ function Info() {
                         <>
                           {data.PLO && data.PLO.map((plo, index) => (
                             <div key={index} className='border border-black bg-slate-200'>
-                              <strong>{plo.number}:</strong> 
+                              <strong>{plo.number}:</strong>
                               <p className='w-full max-w-lg overflow-hidden text-ellipsis whitespace-normal h-auto'>{plo.description}</p>
                             </div>
                           ))}
