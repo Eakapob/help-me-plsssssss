@@ -11,6 +11,8 @@ import Info from './component/Info.jsx'
 import PrivateRoute from './component/PrivateRoute'; // นำเข้า PrivateRoute
 import CourseDetailsPage from "./component/CourseDetailsPage";
 import CourseDetails from "./component/CourseDetails";
+import PLOPage from "./component/PLOPage";
+import PLO from "./component/PLO.jsx"
 
 const router = createBrowserRouter([
   {
@@ -53,6 +55,18 @@ const router = createBrowserRouter([
     path: "/course-detailsuser/:subjectCode",
     element: <CourseDetails /> // ไม่ต้องตรวจสอบสิทธิ์
   },
+  {
+    path: "/plos", // เส้นทางสำหรับหน้า PLO
+    element: (
+      <PrivateRoute>
+        <PLOPage />
+      </PrivateRoute>
+    ) // ตรวจสอบสิทธิ์ก่อนเข้า PLOPage
+  },
+  {
+    path: "/plosuser", // เส้นทางสำหรับหน้า PLO
+    element: <PLO />
+  }
 ]);
 
 ReactDOM.createRoot(document.getElementById('root')).render(
