@@ -607,7 +607,7 @@ function InfoPage() {
     console.log("check path add", parentId, grandParentId, subinsubtopicId);
     let path;
     if (subinsubtopicId && grandParentId) {
-      path = `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${grandParentId}/Subtopics/${parentId}/Subinsubtopics/${subinsubtopicId}/Subsubinsubtopics`;
+      path = `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${subinsubtopicId}/Subtopics/${grandParentId}/Subinsubtopics/${parentId}/Subsubinsubtopics`;
     } else if (grandParentId) {
       path = `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${grandParentId}/Subtopics/${parentId}/Subinsubtopics`;
     } else {
@@ -1173,10 +1173,15 @@ function InfoPage() {
   
           const cloCollection = collection(db, `${topicsPath}/${topicId}/CLOs`);
           const cloSnapshot = await getDocs(cloCollection);
-          const fetchedCLOs = cloSnapshot.docs.map((doc) => ({
-            id: doc.id,
-            ...doc.data(),
-          }));
+          const fetchedCLOs = cloSnapshot.docs.map((doc) => {
+            const data = doc.data();
+            // ตรวจสอบว่าข้อมูลที่ดึงมามีค่า ploId และเป็น array
+            // console.log('CLO fetched data:', data);
+            return {
+              id: doc.id,
+              ...data,
+            };
+          });
   
           const subtopicsCollection = collection(
             db,
@@ -1324,6 +1329,7 @@ function InfoPage() {
         setTableData(allTableData);
         // console.log(allTableData)
         setCloData(allCLOs);
+        console.log("allCLOs",allCLOs)
       } catch (error) {
         console.error("Error fetching all data: ", error);
       }
@@ -1332,6 +1338,7 @@ function InfoPage() {
     fetchAllCLOs();
   }, [facultyId, levelEduId, departmentId, courseYearId]);
    // เพิ่ม dependencies
+   
 
   useEffect(() => {
     const fetchCLOs = async () => {
@@ -3113,7 +3120,7 @@ function InfoPage() {
                     class="bg-transparent hover:bg-green-500 text-green-700 font-semibold hover:text-white py-1 px-1 border border-green-500 hover:border-transparent rounded"
                     onClick={() => handleAddTopic()}
                   >
-                    Add Topic
+                    เพิ่มหัวข้อ
                   </button>
 
                   <div>

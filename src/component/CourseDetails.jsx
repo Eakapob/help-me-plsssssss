@@ -251,6 +251,7 @@ const CourseDetailsPage = () => {
                               </span>
                             )}
                           </span>
+                          <strong>)</strong>
                           <br />
                           {showPLODescriptions[index] && (
                             <div>

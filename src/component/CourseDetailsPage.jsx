@@ -11,6 +11,7 @@ import {
   where,
   query,
   setDoc,
+  deleteDoc
 } from "firebase/firestore";
 import * as XLSX from "xlsx";
 
@@ -347,6 +348,55 @@ const CourseDetailsPage = () => {
     console.log("closWithPLOs:", closWithPLOs);
   }
 
+  const deleteCLO = async (cloId, parentType, parentIds) => {
+    try {
+      let cloDocRef;
+
+      // เลือก path ตามประเภทของ parentType
+      switch (parentType) {
+        case "topic":
+          cloDocRef = doc(
+            db,
+            `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${parentIds.topicId}/CLOs`,
+            cloId
+          );
+          break;
+        case "subtopic":
+          cloDocRef = doc(
+            db,
+            `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${parentIds.topicId}/Subtopics/${parentIds.subtopicId}/CLOs`,
+            cloId
+          );
+          break;
+        case "subinsubtopic":
+          cloDocRef = doc(
+            db,
+            `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${parentIds.topicId}/Subtopics/${parentIds.subtopicId}/Subinsubtopics/${parentIds.subinsubtopicId}/CLOs`,
+            cloId
+          );
+          break;
+        case "subsubinsub":
+          cloDocRef = doc(
+            db,
+            `faculty/${facultyId}/LevelEdu/${levelEduId}/Department/${departmentId}/CourseYear/${courseYearId}/Topics/${parentIds.topicId}/Subtopics/${parentIds.subtopicId}/Subinsubtopics/${parentIds.subinsubtopicId}/Subsubinsubtopics/${parentIds.subsubinsubtopicId}/CLOs`,
+            cloId
+          );
+          break;
+        default:
+          console.error("Unknown parent type:", parentType);
+          return;
+      }
+
+      await deleteDoc(cloDocRef);
+      console.log("CLO deleted successfully");
+
+      // อัปเดต CLOs ใน state หลังจากลบ
+      setClosWithPLOs((prevCLOs) => prevCLOs.filter((clo) => clo.id !== cloId));
+    } catch (error) {
+      console.error("Error deleting CLO:", error);
+    }
+  };
+
   if (loading) {
     return <div>Loading...</div>;
   }
@@ -526,37 +576,55 @@ const CourseDetailsPage = () => {
                               </span>
                             )}
                           </span>
+                          <strong>)</strong>
                           <br />
                           {showPLODescriptions[index] && (
                             <div>
                               <strong>คำอธิบายPLO:</strong>{" "}
                               {Array.isArray(clo.ploId)
                                 ? // ถ้า clo.ploId เป็น array ให้แสดงคำอธิบายของแต่ละ PLO
-                                  clo.ploId.map((ploId, ploIndex) => {
-                                    const plo = allPLOs.find(
-                                      (data) => data.id === ploId
-                                    );
-                                    return plo ? (
+                                clo.ploId.map((ploId, ploIndex) => {
+                                  const plo = allPLOs.find(
+                                    (data) => data.id === ploId
+                                  );
+                                  return plo ? (
+                                    <div key={ploIndex}>
+                                      <strong>{plo.number}:</strong>{" "}
+                                      {plo.description}
+                                    </div>
+                                  ) : null;
+                                })
+                                : // ถ้า clo.ploId เป็น string (PLO เดียว) ให้แสดงคำอธิบายของ PLO เดียว
+                                allPLOs.map((plo, ploIndex) => {
+                                  if (plo.id === clo.ploId) {
+                                    return (
                                       <div key={ploIndex}>
                                         <strong>{plo.number}:</strong>{" "}
                                         {plo.description}
                                       </div>
-                                    ) : null;
-                                  })
-                                : // ถ้า clo.ploId เป็น string (PLO เดียว) ให้แสดงคำอธิบายของ PLO เดียว
-                                  allPLOs.map((plo, ploIndex) => {
-                                    if (plo.id === clo.ploId) {
-                                      return (
-                                        <div key={ploIndex}>
-                                          <strong>{plo.number}:</strong>{" "}
-                                          {plo.description}
-                                        </div>
-                                      );
-                                    }
-                                    return null;
-                                  })}
+                                    );
+                                  }
+                                  return null;
+                                })}
                             </div>
                           )}
+                          {/* เพิ่มปุ่ม Delete */}
+                          <button
+                            className="text-red-500"
+                            onClick={() => deleteCLO(clo.id, selectedParentType, {
+                              topicId: selectedTopicId,
+                              subtopicId: selectedSubtopicId,
+                              subinsubtopicId: selectedSubinsubtopicId,
+                              subsubinsubtopicId: selectedSubsubinsubtopicId,
+                            })}
+                            style={{
+                              marginTop: "5px",
+                              cursor: "pointer",
+                              textDecoration: "underline",
+                            }}
+                          >
+                            Delete
+                          </button>
                         </li>
                       ))}
                   </ul>
@@ -597,7 +665,7 @@ const CourseDetailsPage = () => {
                           />
                         </div>
                         <div>
-                          <label className="block font-bold">เลือก PLO:</label>
+                          <label className="block font-bold">เลือก PLO: (กด Ctrl ค้าง เพื่อเลือกหลาย PLO)</label>
                           <select
                             multiple
                             value={selectedPLO}

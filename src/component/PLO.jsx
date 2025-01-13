@@ -47,13 +47,23 @@ const PLO = () => {
       return; // Exit early if cloData is not available
     }
 
-    const relatedCLOs2 = cloData.filter((clo) => clo.ploId === plo.id); // Filter CLOs by PLO ID
+    // กรอง CLOs โดยตรวจสอบว่า ploId ใน clo เป็น string หรือ array
+    const relatedCLOs2 = cloData.filter((clo) => {
+      // แปลง clo.ploId ให้เป็น array ถ้าจำเป็น
+      const ploIds = Array.isArray(clo.ploId) ? clo.ploId : [clo.ploId]; // ถ้าไม่ใช่ array ให้แปลงเป็น array
+      const ploIdString = String(plo.id); // แปลง plo.id เป็น string
+
+      // เปรียบเทียบว่า ploIdString อยู่ใน ploIds หรือไม่
+      return ploIds.some(id => String(id) === ploIdString); // ใช้ some() เพื่อเช็คว่ามีค่า ploId ที่ตรงกันกับ plo.id หรือไม่
+    });
+
     console.log("Related CLOs:", relatedCLOs2);
 
-    setIsModalOpen(true); // Open the modal
-    setSelectPLO(plo); // Set the selected PLO
-    setRelatedCLOs(relatedCLOs2); // Set the filtered CLOs for the modal
+    setIsModalOpen(true); // เปิด modal
+    setSelectPLO(plo); // ตั้งค่า PLO ที่เลือก
+    setRelatedCLOs(relatedCLOs2); // ตั้งค่า CLO ที่กรองแล้วให้แสดงใน modal
   };
+
 
   const getPloById = async (ploId) => {
     try {
@@ -143,10 +153,10 @@ const PLO = () => {
           return plo
             ? plo
             : {
-                id: ploId,
-                number: "Unknown",
-                description: "No description available",
-              };
+              id: ploId,
+              number: "Unknown",
+              description: "No description available",
+            };
         });
 
         setSelectedSubjectPLOs(ploDetails);
@@ -329,7 +339,7 @@ const PLO = () => {
               {/* Modal สำหรับแสดง CLO ที่เชื่อมโยงกับ PLO */}
               {isModalOpen && selectPLO && relatedCLOs && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-                  <div className="bg-white p-6 rounded-lg shadow-lg">
+                  <div className="bg-white p-6 rounded-lg shadow-lg max-h-[80vh] overflow-y-auto">
                     <h3 className="text-xl font-bold">
                       CLOs for PLO {selectPLO.number}
                     </h3>
@@ -339,6 +349,7 @@ const PLO = () => {
                           (clo) => clo.tableDataId === tableDataItem.id
                         )
                       )
+                      .sort((a, b) => a.subjectCode.localeCompare(b.subjectCode))
                       .map((tableDataItem) => (
                         <div key={tableDataItem.id} className="mb-4">
                           <h4

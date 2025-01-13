@@ -1,7 +1,0 @@
-.theader {
-    @apply p-3 text-sm border-2;
-}
-
-.bdw {
-    @apply bg-yellow-100 border border-white;
-}

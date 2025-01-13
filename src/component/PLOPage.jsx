@@ -41,9 +41,12 @@ const PLOPage = () => {
     departmentId,
     courseYearId,
     // data,
-    tableData,
-    cloData,
+    tableData = [],
+    cloData = [],
   } = location.state || {}; // Destructure the passed state
+  console.log("tableData:", tableData);
+  // console.log("relatedCLOs:", relatedCLOs);
+  console.log("CLO", cloData)
 
   const [selectedSubjectCLOs, setSelectedSubjectCLOs] = useState([]);
 
@@ -147,13 +150,16 @@ const PLOPage = () => {
           existingPLOs.push(newPLO);
         }
 
-        // อัปเดตข้อมูล PLOs ใน state
+        // รีเฟรชข้อมูล PLO ที่แสดงใน UI
         const updatedPLOsSnapshot = await getDocs(PLOCollectionRef);
         const updatedPLOs = updatedPLOsSnapshot.docs.map((doc) => ({
           ...doc.data(),
           id: doc.id,
         }));
+
+        // อัปเดตข้อมูล PLOs ใน state
         setData((prev) => ({ ...prev, PLO: updatedPLOs }));
+
       } catch (error) {
         console.error("Error importing PLOs: ", error);
       }
@@ -222,13 +228,23 @@ const PLOPage = () => {
       return; // Exit early if cloData is not available
     }
 
-    const relatedCLOs2 = cloData.filter((clo) => clo.ploId === plo.id); // Filter CLOs by PLO ID
+    // กรอง CLOs โดยตรวจสอบว่า ploId ใน clo เป็น string หรือ array
+    const relatedCLOs2 = cloData.filter((clo) => {
+      // แปลง clo.ploId ให้เป็น array ถ้าจำเป็น
+      const ploIds = Array.isArray(clo.ploId) ? clo.ploId : [clo.ploId]; // ถ้าไม่ใช่ array ให้แปลงเป็น array
+      const ploIdString = String(plo.id); // แปลง plo.id เป็น string
+
+      // เปรียบเทียบว่า ploIdString อยู่ใน ploIds หรือไม่
+      return ploIds.some(id => String(id) === ploIdString); // ใช้ some() เพื่อเช็คว่ามีค่า ploId ที่ตรงกันกับ plo.id หรือไม่
+    });
+
     console.log("Related CLOs:", relatedCLOs2);
 
-    setIsModalOpen(true); // Open the modal
-    setSelectPLO(plo); // Set the selected PLO
-    setRelatedCLOs(relatedCLOs2); // Set the filtered CLOs for the modal
+    setIsModalOpen(true); // เปิด modal
+    setSelectPLO(plo); // ตั้งค่า PLO ที่เลือก
+    setRelatedCLOs(relatedCLOs2); // ตั้งค่า CLO ที่กรองแล้วให้แสดงใน modal
   };
+
 
   const getPloById = async (ploId) => {
     try {
@@ -325,10 +341,10 @@ const PLOPage = () => {
           return plo
             ? plo
             : {
-                id: ploId,
-                number: "Unknown",
-                description: "No description available",
-              };
+              id: ploId,
+              number: "Unknown",
+              description: "No description available",
+            };
         });
 
         setSelectedSubjectPLOs(ploDetails);
@@ -750,16 +766,23 @@ const PLOPage = () => {
               {/* Modal สำหรับแสดง CLO ที่เชื่อมโยงกับ PLO */}
               {isModalOpen && selectPLO && relatedCLOs && (
                 <div className="fixed inset-0 bg-black bg-opacity-50 flex justify-center items-center">
-                  <div className="bg-white p-6 rounded-lg shadow-lg">
+                  <div className="bg-white p-6 rounded-lg shadow-lg max-h-[80vh] overflow-y-auto">
                     <h3 className="text-xl font-bold">
                       CLOs for PLO {selectPLO.number}
                     </h3>
                     {tableData
-                      .filter((tableDataItem) =>
-                        relatedCLOs.some(
-                          (clo) => clo.tableDataId === tableDataItem.id
-                        )
-                      )
+                      .filter((tableDataItem) => {
+                        console.log("Checking tableDataItem.id:", tableDataItem.id); // Log ค่า tableDataItem.id
+                        return relatedCLOs.some((clo) => {
+                          // แปลง clo.tableDataId ให้เป็น array ถ้าไม่ใช่ array
+                          const tableDataIdArray = Array.isArray(clo.tableDataId) ? clo.tableDataId : [clo.tableDataId];
+                          console.log("Checking clo.tableDataId:", clo.tableDataId); // Log ค่า clo.tableDataId
+                          console.log("Converted tableDataIdArray:", tableDataIdArray); // Log ค่า tableDataIdArray
+                          // เปรียบเทียบ clo.tableDataId กับ tableDataItem.id
+                          return tableDataIdArray.includes(tableDataItem.id);
+                        });
+                      })
+                      .sort((a, b) => a.subjectCode.localeCompare(b.subjectCode))
                       .map((tableDataItem) => (
                         <div key={tableDataItem.id} className="mb-4">
                           <h4
@@ -784,16 +807,23 @@ const PLOPage = () => {
                           </h4>
                           <ul>
                             {relatedCLOs
-                              .filter(
-                                (clo) => clo.tableDataId === tableDataItem.id
-                              )
-                              .sort(
-                                (a, b) => parseInt(a.name) - parseInt(b.name)
-                              )
+                              .filter((clo) => {
+                                console.log("check clo", clo);
+                                console.log("Comparing clo.tableDataId:", clo.tableDataId, "with tableDataItem.id:", tableDataItem.id);
+
+                                const tableDataIdArray = Array.isArray(clo.tableDataId) ? clo.tableDataId : [clo.tableDataId];
+
+                                console.log("tableDataIdArray:", tableDataIdArray);
+
+                                return tableDataIdArray.some(id => {
+                                  console.log("Comparing id:", id, "with tableDataItem.id:", tableDataItem.id);
+                                  return String(id) === String(tableDataItem.id);
+                                });
+                              })
+                              .sort((a, b) => parseInt(a.name) - parseInt(b.name))
                               .map((clo) => (
                                 <li key={clo.id} className="border-b py-2">
-                                  <strong>CLO {clo.name}</strong>:{" "}
-                                  {clo.description}
+                                  <strong>CLO {clo.name}</strong>: {clo.description}
                                 </li>
                               ))}
                           </ul>
